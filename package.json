@@ -1,0 +1,14 @@
+{
+  "name": "quickcompare-android-cloud",
+  "version": "1.1.0",
+  "description": "Cloud-hosted QuickCompare for Android — live multi-product rate comparison across JioMart, Blinkit, and Flipkart Minutes with separate per-platform addresses",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "playwright": "1.50.0"
+  }
+}

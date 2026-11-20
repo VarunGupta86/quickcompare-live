@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: quickcompare-live
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: HEADLESS
+        value: "true"
