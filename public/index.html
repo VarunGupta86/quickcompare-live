@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>QuickCompare — JioMart, Blinkit & Flipkart Minutes Rate Comparison</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .platform-jiomart { --accent: #0078ad; --accent-bg: #e0f2fe; --accent-border: #7dd3fc; }
+    .platform-blinkit { --accent: #ca8a04; --accent-bg: #fef9c3; --accent-border: #fde047; }
+    .platform-flipkart { --accent: #2563eb; --accent-bg: #dbeafe; --accent-border: #93c5fd; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Navigation -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-sm">
+          <i data-lucide="layers" class="w-5 h-5"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-900 truncate">QuickCompare</h1>
+            <span id="dataSourceBadge" class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              Sample Catalog
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 truncate">All search results from JioMart, Blinkit &amp; Flipkart Minutes on one screen</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0">
+        <button id="openImportBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors">
+          <i data-lucide="upload" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Import Live JSON</span>
+          <span class="sm:hidden">Import</span>
+        </button>
+        <button id="openBasketBtn" type="button" class="relative inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-sm">
+          <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+          <span>Basket</span>
+          <span id="basketCount" class="ml-0.5 px-1.5 py-0.5 text-[11px] font-bold rounded-full bg-emerald-400 text-slate-950">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 space-y-4">
+
+    <!-- Individual Platform Address Selector Bar -->
+    <section aria-label="Per-platform delivery addresses">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-600"></i>
+          <span>Individual Platform Delivery Addresses</span>
+        </div>
+        <span class="text-xs text-slate-500 hidden sm:inline">Changing a platform's pincode updates its local pricing, ETA &amp; stock independently</span>
+      </div>
+      <div id="addressCardsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- Search & Controls Card -->
+    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+      <div class="flex flex-col lg:flex-row gap-3">
+        <!-- Search Input -->
+        <div class="relative flex-1">
+          <i data-lucide="search" class="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          <input
+            id="searchInput"
+            type="text"
+            value="dove"
+            placeholder="Search any brand or item (e.g. dove, milk, atta, maggi, butter)..."
+            class="w-full pl-11 pr-20 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10 outline-none text-sm sm:text-base font-medium transition-all"
+          />
+          <button id="clearSearchBtn" type="button" class="absolute right-24 top-1/2 -translate-y-1/2 px-2 py-1 text-xs font-medium text-slate-500 hover:text-slate-800 rounded-md hover:bg-slate-200/70 transition-colors">
+            Clear
+          </button>
+          <button id="liveSearchBtn" type="button" class="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-xs">
+            Search Live
+          </button>
+        </div>
+
+        <!-- View & Sort Controls -->
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+            <button id="viewSplitBtn" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 bg-white text-slate-900 shadow-sm">
+              <i data-lucide="columns-3" class="w-3.5 h-3.5"></i>
+              <span>3-Column</span>
+            </button>
+            <button id="viewUnifiedBtn" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 text-slate-600 hover:text-slate-900">
+              <i data-lucide="list" class="w-3.5 h-3.5"></i>
+              <span>Unified List</span>
+            </button>
+          </div>
+
+          <select id="sortSelect" aria-label="Sort results" class="px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-medium text-slate-700 focus:outline-none focus:border-slate-900">
+            <option value="relevance">Sort: Relevance</option>
+            <option value="price_asc">Price: Low to High</option>
+            <option value="price_desc">Price: High to Low</option>
+            <option value="unit_asc">Best Unit Rate (₹/100g or ml)</option>
+            <option value="discount_desc">Highest Discount (%)</option>
+          </select>
+
+          <label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs sm:text-sm font-medium text-slate-700 cursor-pointer select-none hover:bg-slate-100 transition-colors">
+            <input id="inStockToggle" type="checkbox" class="rounded border-slate-300 text-slate-900 focus:ring-slate-900" />
+            <span>In Stock Only</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Quick Search Suggestions + Dynamic Sub-category Filters -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-slate-100">
+        <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-thin pb-1 sm:pb-0">
+          <span class="text-xs font-medium text-slate-400 shrink-0 mr-1">Try:</span>
+          <div id="quickChips" class="flex items-center gap-1.5">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <div id="externalSearchLinks" class="flex items-center gap-2 text-xs shrink-0">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Dynamic Category Filter Pills -->
+      <div id="categoryFilterRow" class="flex items-center gap-1.5 overflow-x-auto scrollbar-thin pt-1">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- Live Fetch Status Banner -->
+    <div id="liveStatusBanner" class="hidden rounded-xl border px-4 py-3 text-xs sm:text-sm font-medium flex items-center justify-between gap-3"></div>
+
+    <!-- Summary Metrics Strip -->
+    <section id="summaryStrip" class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <!-- Populated by JS -->
+    </section>
+
+    <!-- Mobile Platform Tabs (only visible on small screens in 3-Column mode) -->
+    <div id="mobilePlatformTabs" class="flex lg:hidden bg-white rounded-xl p-1 border border-slate-200 gap-1">
+      <!-- Populated by JS -->
+    </div>
+
+    <!-- Main Comparison Results Container -->
+    <section id="resultsContainer" class="min-h-[380px]">
+      <!-- Populated by JS -->
+    </section>
+  </main>
+
+  <!-- Address Modal (Per-Platform) -->
+  <div id="addressModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div>
+          <h2 id="addressModalTitle" class="text-base font-bold text-slate-900">Select Delivery Address</h2>
+          <p id="addressModalSubtitle" class="text-xs text-slate-500">Applies only to this platform</p>
+        </div>
+        <button id="closeAddressModalBtn" type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4 max-h-[75vh] overflow-y-auto scrollbar-thin">
+        <div>
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Saved Locations</div>
+          <div id="savedAddressList" class="space-y-2">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-4">
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2.5">Or Enter Custom Address</div>
+          <form id="customAddressForm" class="space-y-2.5">
+            <div class="grid grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1" for="addrLabelInput">Label</label>
+                <input id="addrLabelInput" type="text" required placeholder="e.g. Home, Parents" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-slate-900" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1" for="addrPincodeInput">6-Digit Pincode</label>
+                <input id="addrPincodeInput" type="text" required pattern="[0-9]{6}" maxlength="6" placeholder="e.g. 462016" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-slate-900" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1" for="addrAreaInput">Locality &amp; City</label>
+              <input id="addrAreaInput" type="text" required placeholder="e.g. Arera Colony, Bhopal" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-slate-900" />
+            </div>
+            <div class="flex items-center justify-between pt-2 gap-2">
+              <button id="applyAllPlatformsBtn" type="button" class="px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors">
+                Apply to All 3
+              </button>
+              <button type="submit" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors">
+                Save for This Platform
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Live JSON Modal -->
+  <div id="importModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Import Live Scraped Results (JSON)</h2>
+          <p class="text-xs text-slate-500">Load output from the local QuickCompare scraper or paste custom data</p>
+        </div>
+        <button id="closeImportModalBtn" type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div class="flex flex-wrap items-center gap-2">
+          <label class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 cursor-pointer transition-colors">
+            <i data-lucide="file-json" class="w-4 h-4"></i>
+            <span>Upload JSON File</span>
+            <input id="jsonFileInput" type="file" accept=".json,application/json" class="hidden" />
+          </label>
+          <button id="downloadTemplateBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span>Download JSON Template</span>
+          </button>
+          <button id="resetDemoBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+            <span>Reset Sample Data</span>
+          </button>
+        </div>
+
+        <div>
+          <label for="jsonPasteArea" class="block text-xs font-medium text-slate-600 mb-1">Or Paste JSON Array Here</label>
+          <textarea
+            id="jsonPasteArea"
+            rows="7"
+            placeholder='[{"platform":"jiomart","title":"Dove Cream Beauty Bar","brand":"Dove","category":"Soap","packLabel":"100 g","unitValue":100,"unitType":"g","price":58,"mrp":65,"inStock":true,"url":"https://www.jiomart.com/search?q=dove"}]'
+            class="w-full p-3 rounded-xl border border-slate-300 font-mono text-xs focus:outline-none focus:border-slate-900"
+          ></textarea>
+        </div>
+
+        <div id="importErrorMsg" class="hidden text-xs text-rose-600 font-medium bg-rose-50 border border-rose-200 rounded-lg px-3 py-2"></div>
+
+        <div class="flex justify-end gap-2">
+          <button id="cancelImportBtn" type="button" class="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100">Cancel</button>
+          <button id="applyJsonBtn" type="button" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800">Load Results</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Basket Comparison Slide-Over Drawer -->
+  <div id="basketDrawer" class="fixed inset-0 z-50 hidden justify-end bg-slate-900/40 backdrop-blur-xs">
+    <div class="bg-white w-full max-w-md h-full shadow-2xl flex flex-col">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Basket Cost Breakdown</h2>
+          <p class="text-xs text-slate-500">Totals include each platform's local delivery &amp; handling fee</p>
+        </div>
+        <button id="closeBasketBtn" type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="basketContent" class="flex-1 overflow-y-auto p-5 space-y-4 scrollbar-thin">
+        <!-- Populated by JS -->
+      </div>
+      <div class="px-5 py-3.5 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+        <button id="clearBasketBtn" type="button" class="text-xs font-semibold text-rose-600 hover:text-rose-700">Clear Basket</button>
+        <button id="closeBasketFooterBtn" type="button" class="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs sm:text-sm font-medium shadow-lg">
+    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toastText"></span>
+  </div>
+
+  <script>
+    // --- Platform Metadata ---
+    const PLATFORMS = {
+      jiomart: {
+        id: 'jiomart',
+        name: 'JioMart',
+        short: 'JioMart',
+        badgeClass: 'bg-sky-100 text-sky-800 border-sky-200',
+        headerBg: 'bg-sky-50/90 border-sky-200',
+        dotClass: 'bg-sky-600',
+        accentText: 'text-sky-700',
+        baseDeliveryFee: 0,
+        handlingFee: 5,
+        searchUrl: (q) => `https://www.jiomart.com/search?q=${encodeURIComponent(q)}`
+      },
+      blinkit: {
+        id: 'blinkit',
+        name: 'Blinkit',
+        short: 'Blinkit',
+        badgeClass: 'bg-amber-100 text-amber-900 border-amber-300',
+        headerBg: 'bg-amber-50/90 border-amber-200',
+        dotClass: 'bg-amber-500',
+        accentText: 'text-amber-800',
+        baseDeliveryFee: 25,
+        handlingFee: 4,
+        searchUrl: (q) => `https://blinkit.com/s/?q=${encodeURIComponent(q)}`
+      },
+      flipkart: {
+        id: 'flipkart',
+        name: 'Flipkart Minutes',
+        short: 'FK Minutes',
+        badgeClass: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+        headerBg: 'bg-indigo-50/90 border-indigo-200',
+        dotClass: 'bg-indigo-600',
+        accentText: 'text-indigo-700',
+        baseDeliveryFee: 19,
+        handlingFee: 5,
+        searchUrl: (q) => `https://www.flipkart.com/search?q=${encodeURIComponent(q)}&marketplace=HYPERLOCAL`
+      }
+    };
+
+    const PLATFORM_ORDER = ['jiomart', 'blinkit', 'flipkart'];
+
+    // --- Saved Address Presets ---
+    const DEFAULT_SAVED_ADDRESSES = [
+      { id: 'addr-1', label: 'Home', area: 'Arera Colony, Bhopal', pincode: '462016' },
+      { id: 'addr-2', label: 'Office', area: 'MP Nagar Zone II, Bhopal', pincode: '462011' },
+      { id: 'addr-3', label: 'Indore Flat', area: 'Vijay Nagar, Indore', pincode: '452010' },
+      { id: 'addr-4', label: 'Parents', area: 'Kolar Road, Bhopal', pincode: '462042' },
+      { id: 'addr-5', label: 'Bengaluru', area: 'Indiranagar, Bengaluru', pincode: '560038' },
+      { id: 'addr-6', label: 'Mumbai', area: 'Andheri West, Mumbai', pincode: '400053' }
+    ];
+
+    // --- Rich Sample Multi-Product Catalog (Multiple variants per keyword across all 3 platforms) ---
+    const SAMPLE_CATALOG = [
+      // === DOVE (JioMart) ===
+      { id: 'jm-d1', platform: 'jiomart', title: 'Dove Cream Beauty Bathing Bar', brand: 'Dove', category: 'Soap', packLabel: '100 g', unitValue: 100, unitType: 'g', price: 58, mrp: 65, inStock: true },
+      { id: 'jm-d2', platform: 'jiomart', title: 'Dove Cream Beauty Bathing Bar (Pack of 4)', brand: 'Dove', category: 'Soap', packLabel: '4 x 100 g', unitValue: 400, unitType: 'g', price: 218, mrp: 260, inStock: true },
+      { id: 'jm-d3', platform: 'jiomart', title: 'Dove Pink Rosa Beauty Bathing Bar', brand: 'Dove', category: 'Soap', packLabel: '125 g', unitValue: 125, unitType: 'g', price: 74, mrp: 85, inStock: true },
+      { id: 'jm-d4', platform: 'jiomart', title: 'Dove Intense Repair Shampoo', brand: 'Dove', category: 'Shampoo', packLabel: '340 ml', unitValue: 340, unitType: 'ml', price: 249, mrp: 355, inStock: true },
+      { id: 'jm-d5', platform: 'jiomart', title: 'Dove Hair Fall Rescue Shampoo', brand: 'Dove', category: 'Shampoo', packLabel: '650 ml', unitValue: 650, unitType: 'ml', price: 425, mrp: 635, inStock: true },
+      { id: 'jm-d6', platform: 'jiomart', title: 'Dove Deeply Nourishing Body Wash', brand: 'Dove', category: 'Body Wash', packLabel: '250 ml', unitValue: 250, unitType: 'ml', price: 159, mrp: 220, inStock: true },
+      { id: 'jm-d7', platform: 'jiomart', title: 'Dove Intense Repair Conditioner', brand: 'Dove', category: 'Conditioner', packLabel: '180 ml', unitValue: 180, unitType: 'ml', price: 175, mrp: 230, inStock: true },
+      { id: 'jm-d8', platform: 'jiomart', title: 'Dove Essential Nourishment Body Lotion', brand: 'Dove', category: 'Lotion', packLabel: '400 ml', unitValue: 400, unitType: 'ml', price: 299, mrp: 440, inStock: true },
+
+      // === DOVE (Blinkit) ===
+      { id: 'bk-d1', platform: 'blinkit', title: 'Dove Cream Beauty Bathing Bar', brand: 'Dove', category: 'Soap', packLabel: '100 g', unitValue: 100, unitType: 'g', price: 62, mrp: 65, inStock: true },
+      { id: 'bk-d2', platform: 'blinkit', title: 'Dove Cream Beauty Bathing Bar (Pack of 3)', brand: 'Dove', category: 'Soap', packLabel: '3 x 125 g', unitValue: 375, unitType: 'g', price: 215, mrp: 255, inStock: true },
+      { id: 'bk-d3', platform: 'blinkit', title: 'Dove Gentle Exfoliating Bathing Bar', brand: 'Dove', category: 'Soap', packLabel: '125 g', unitValue: 125, unitType: 'g', price: 82, mrp: 88, inStock: true },
+      { id: 'bk-d4', platform: 'blinkit', title: 'Dove Intense Repair Shampoo', brand: 'Dove', category: 'Shampoo', packLabel: '340 ml', unitValue: 340, unitType: 'ml', price: 268, mrp: 355, inStock: true },
+      { id: 'bk-d5', platform: 'blinkit', title: 'Dove Daily Shine Shampoo', brand: 'Dove', category: 'Shampoo', packLabel: '180 ml', unitValue: 180, unitType: 'ml', price: 158, mrp: 190, inStock: true },
+      { id: 'bk-d6', platform: 'blinkit', title: 'Dove Deeply Nourishing Body Wash', brand: 'Dove', category: 'Body Wash', packLabel: '250 ml', unitValue: 250, unitType: 'ml', price: 179, mrp: 220, inStock: true },
+      { id: 'bk-d7', platform: 'blinkit', title: 'Dove Shea Butter & Warm Vanilla Body Wash', brand: 'Dove', category: 'Body Wash', packLabel: '800 ml', unitValue: 800, unitType: 'ml', price: 389, mrp: 549, inStock: true },
+      { id: 'bk-d8', platform: 'blinkit', title: 'Dove Healthy Ritual Conditioner', brand: 'Dove', category: 'Conditioner', packLabel: '175 ml', unitValue: 175, unitType: 'ml', price: 192, mrp: 230, inStock: false },
+
+      // === DOVE (Flipkart Minutes) ===
+      { id: 'fk-d1', platform: 'flipkart', title: 'Dove Cream Beauty Bathing Bar', brand: 'Dove', category: 'Soap', packLabel: '100 g', unitValue: 100, unitType: 'g', price: 56, mrp: 65, inStock: true },
+      { id: 'fk-d2', platform: 'flipkart', title: 'Dove Cream Beauty Bathing Bar (Pack of 4)', brand: 'Dove', category: 'Soap', packLabel: '4 x 100 g', unitValue: 400, unitType: 'g', price: 212, mrp: 260, inStock: true },
+      { id: 'fk-d3', platform: 'flipkart', title: 'Dove Intense Repair Shampoo', brand: 'Dove', category: 'Shampoo', packLabel: '340 ml', unitValue: 340, unitType: 'ml', price: 239, mrp: 355, inStock: true },
+      { id: 'fk-d4', platform: 'flipkart', title: 'Dove Hair Fall Rescue Shampoo', brand: 'Dove', category: 'Shampoo', packLabel: '650 ml', unitValue: 650, unitType: 'ml', price: 419, mrp: 635, inStock: true },
+      { id: 'fk-d5', platform: 'flipkart', title: 'Dove Deeply Nourishing Body Wash', brand: 'Dove', category: 'Body Wash', packLabel: '250 ml', unitValue: 250, unitType: 'ml', price: 154, mrp: 220, inStock: true },
+      { id: 'fk-d6', platform: 'flipkart', title: 'Dove Exfoliating Body Polish Crushed Macadamia', brand: 'Dove', category: 'Body Scrub', packLabel: '298 g', unitValue: 298, unitType: 'g', price: 545, mrp: 799, inStock: true },
+      { id: 'fk-d7', platform: 'flipkart', title: 'Dove Intense Repair Conditioner', brand: 'Dove', category: 'Conditioner', packLabel: '180 ml', unitValue: 180, unitType: 'ml', price: 169, mrp: 230, inStock: true },
+
+      // === AMUL MILK & DAIRY ===
+      { id: 'jm-m1', platform: 'jiomart', title: 'Amul Taaza Toned Milk (Tetra Pak)', brand: 'Amul', category: 'Milk', packLabel: '1 L', unitValue: 1000, unitType: 'ml', price: 72, mrp: 74, inStock: true },
+      { id: 'jm-m2', platform: 'jiomart', title: 'Amul Gold Full Cream Milk (Tetra Pak)', brand: 'Amul', category: 'Milk', packLabel: '1 L', unitValue: 1000, unitType: 'ml', price: 80, mrp: 82, inStock: true },
+      { id: 'jm-m3', platform: 'jiomart', title: 'Amul Pasteurised Butter', brand: 'Amul', category: 'Butter', packLabel: '500 g', unitValue: 500, unitType: 'g', price: 282, mrp: 295, inStock: true },
+      { id: 'bk-m1', platform: 'blinkit', title: 'Amul Taaza Toned Fresh Milk (Pouch)', brand: 'Amul', category: 'Milk', packLabel: '500 ml', unitValue: 500, unitType: 'ml', price: 28, mrp: 28, inStock: true },
+      { id: 'bk-m2', platform: 'blinkit', title: 'Amul Taaza Toned Milk (Tetra Pak)', brand: 'Amul', category: 'Milk', packLabel: '1 L', unitValue: 1000, unitType: 'ml', price: 74, mrp: 74, inStock: true },
+      { id: 'bk-m3', platform: 'blinkit', title: 'Amul Gold Full Cream Milk (Pouch)', brand: 'Amul', category: 'Milk', packLabel: '500 ml', unitValue: 500, unitType: 'ml', price: 34, mrp: 34, inStock: true },
+      { id: 'bk-m4', platform: 'blinkit', title: 'Amul Salted Butter', brand: 'Amul', category: 'Butter', packLabel: '100 g', unitValue: 100, unitType: 'g', price: 60, mrp: 60, inStock: true },
+      { id: 'bk-m5', platform: 'blinkit', title: 'Amul Pasteurised Butter', brand: 'Amul', category: 'Butter', packLabel: '500 g', unitValue: 500, unitType: 'g', price: 289, mrp: 295, inStock: true },
+      { id: 'fk-m1', platform: 'flipkart', title: 'Amul Taaza Toned Milk (Tetra Pak)', brand: 'Amul', category: 'Milk', packLabel: '1 L', unitValue: 1000, unitType: 'ml', price: 71, mrp: 74, inStock: true },
+      { id: 'fk-m2', platform: 'flipkart', title: 'Amul Gold Full Cream Milk (Tetra Pak)', brand: 'Amul', category: 'Milk', packLabel: '1 L', unitValue: 1000, unitType: 'ml', price: 78, mrp: 82, inStock: true },
+      { id: 'fk-m3', platform: 'flipkart', title: 'Amul Pasteurised Butter', brand: 'Amul', category: 'Butter', packLabel: '500 g', unitValue: 500, unitType: 'g', price: 279, mrp: 295, inStock: true },
+
+      // === AASHIRVAAD ATTA ===
+      { id: 'jm-a1', platform: 'jiomart', title: 'Aashirvaad Shudh Chakki Atta', brand: 'Aashirvaad', category: 'Atta', packLabel: '5 kg', unitValue: 5000, unitType: 'g', price: 239, mrp: 275, inStock: true },
+      { id: 'jm-a2', platform: 'jiomart', title: 'Aashirvaad Select Sharbati Atta', brand: 'Aashirvaad', category: 'Atta', packLabel: '5 kg', unitValue: 5000, unitType: 'g', price: 299, mrp: 345, inStock: true },
+      { id: 'jm-a3', platform: 'jiomart', title: 'Aashirvaad Shudh Chakki Atta', brand: 'Aashirvaad', category: 'Atta', packLabel: '10 kg', unitValue: 10000, unitType: 'g', price: 449, mrp: 520, inStock: true },
+      { id: 'bk-a1', platform: 'blinkit', title: 'Aashirvaad Shudh Chakki Atta', brand: 'Aashirvaad', category: 'Atta', packLabel: '5 kg', unitValue: 5000, unitType: 'g', price: 255, mrp: 275, inStock: true },
+      { id: 'bk-a2', platform: 'blinkit', title: 'Aashirvaad Select Sharbati Atta', brand: 'Aashirvaad', category: 'Atta', packLabel: '5 kg', unitValue: 5000, unitType: 'g', price: 318, mrp: 345, inStock: true },
+      { id: 'bk-a3', platform: 'blinkit', title: 'Aashirvaad Multigrain Atta', brand: 'Aashirvaad', category: 'Atta', packLabel: '5 kg', unitValue: 5000, unitType: 'g', price: 329, mrp: 365, inStock: true },
+      { id: 'fk-a1', platform: 'flipkart', title: 'Aashirvaad Shudh Chakki Atta', brand: 'Aashirvaad', category: 'Atta', packLabel: '5 kg', unitValue: 5000, unitType: 'g', price: 244, mrp: 275, inStock: true },
+      { id: 'fk-a2', platform: 'flipkart', title: 'Aashirvaad Shudh Chakki Atta', brand: 'Aashirvaad', category: 'Atta', packLabel: '10 kg', unitValue: 10000, unitType: 'g', price: 439, mrp: 520, inStock: true },
+      { id: 'fk-a3', platform: 'flipkart', title: 'Aashirvaad Multigrain Atta', brand: 'Aashirvaad', category: 'Atta', packLabel: '5 kg', unitValue: 5000, unitType: 'g', price: 315, mrp: 365, inStock: true },
+
+      // === MAGGI NOODLES ===
+      { id: 'jm-n1', platform: 'jiomart', title: 'Maggi 2-Minute Masala Noodles (Pack of 4)', brand: 'Maggi', category: 'Noodles', packLabel: '280 g', unitValue: 280, unitType: 'g', price: 54, mrp: 60, inStock: true },
+      { id: 'jm-n2', platform: 'jiomart', title: 'Maggi 2-Minute Masala Noodles (Pack of 12)', brand: 'Maggi', category: 'Noodles', packLabel: '840 g', unitValue: 840, unitType: 'g', price: 158, mrp: 180, inStock: true },
+      { id: 'jm-n3', platform: 'jiomart', title: 'Maggi Nutri-licious Masala Veg Atta Noodles', brand: 'Maggi', category: 'Noodles', packLabel: '290 g', unitValue: 290, unitType: 'g', price: 89, mrp: 104, inStock: true },
+      { id: 'bk-n1', platform: 'blinkit', title: 'Maggi 2-Minute Masala Noodles (Single)', brand: 'Maggi', category: 'Noodles', packLabel: '70 g', unitValue: 70, unitType: 'g', price: 14, mrp: 14, inStock: true },
+      { id: 'bk-n2', platform: 'blinkit', title: 'Maggi 2-Minute Masala Noodles (Pack of 4)', brand: 'Maggi', category: 'Noodles', packLabel: '280 g', unitValue: 280, unitType: 'g', price: 58, mrp: 60, inStock: true },
+      { id: 'bk-n3', platform: 'blinkit', title: 'Maggi Special Masala Noodles (Pack of 4)', brand: 'Maggi', category: 'Noodles', packLabel: '280 g', unitValue: 280, unitType: 'g', price: 68, mrp: 72, inStock: true },
+      { id: 'fk-n1', platform: 'flipkart', title: 'Maggi 2-Minute Masala Noodles (Pack of 4)', brand: 'Maggi', category: 'Noodles', packLabel: '280 g', unitValue: 280, unitType: 'g', price: 52, mrp: 60, inStock: true },
+      { id: 'fk-n2', platform: 'flipkart', title: 'Maggi 2-Minute Masala Noodles (Pack of 12)', brand: 'Maggi', category: 'Noodles', packLabel: '840 g', unitValue: 840, unitType: 'g', price: 154, mrp: 180, inStock: true },
+      { id: 'fk-n3', platform: 'flipkart', title: 'Maggi Nutri-licious Masala Veg Atta Noodles', brand: 'Maggi', category: 'Noodles', packLabel: '290 g', unitValue: 290, unitType: 'g', price: 85, mrp: 104, inStock: true }
+    ];
+
+    const QUICK_SEARCHES = ['dove', 'amul', 'milk', 'butter', 'atta', 'maggi', 'shampoo', 'soap'];
+
+    // --- Application State ---
+    const state = {
+      query: 'dove',
+      viewMode: 'split', // 'split' | 'unified'
+      sortBy: 'relevance',
+      selectedCategory: 'All',
+      inStockOnly: false,
+      mobileTab: 'jiomart',
+      isCustomData: false,
+      catalog: [...SAMPLE_CATALOG],
+      savedAddresses: [...DEFAULT_SAVED_ADDRESSES],
+      platformAddresses: {
+        jiomart: { ...DEFAULT_SAVED_ADDRESSES[0] },
+        blinkit: { ...DEFAULT_SAVED_ADDRESSES[1] },
+        flipkart: { ...DEFAULT_SAVED_ADDRESSES[2] }
+      },
+      editingAddressPlatform: null,
+      basket: {} // keyed by product id -> { item, qty }
+    };
+
+    // --- Persistence (Safe try/catch) ---
+    function loadSavedState() {
+      try {
+        const saved = localStorage.getItem('quickcompare_addresses_v1');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.platformAddresses) state.platformAddresses = parsed.platformAddresses;
+          if (Array.isArray(parsed.savedAddresses) && parsed.savedAddresses.length) {
+            state.savedAddresses = parsed.savedAddresses;
+          }
+        }
+      } catch (e) { /* ignore storage restrictions */ }
+    }
+
+    function persistAddresses() {
+      try {
+        localStorage.setItem('quickcompare_addresses_v1', JSON.stringify({
+          platformAddresses: state.platformAddresses,
+          savedAddresses: state.savedAddresses
+        }));
+      } catch (e) { /* ignore */ }
+    }
+
+    // --- Deterministic Location-Based Price/ETA Simulation for Sample Catalog ---
+    function hashPincode(pincode, salt) {
+      const str = `${pincode || '462016'}-${salt}`;
+      let h = 0;
+      for (let i = 0; i < str.length; i++) {
+        h = ((h << 5) - h) + str.charCodeAt(i);
+        h |= 0;
+      }
+      return Math.abs(h);
+    }
+
+    function getPlatformLocationMeta(platformId) {
+      const addr = state.platformAddresses[platformId];
+      const h = hashPincode(addr.pincode, platformId);
+      if (platformId === 'jiomart') {
+        const eta = 15 + (h % 16);
+        const deliveryFee = (h % 3 === 0) ? 0 : 15;
+        return { eta: `${eta}–${eta + 10} min`, deliveryFee, handlingFee: 5 };
+      }
+      if (platformId === 'blinkit') {
+        const eta = 8 + (h % 9);
+        const deliveryFee = 15 + (h % 3) * 5;
+        return { eta: `${eta} mins`, deliveryFee, handlingFee: 4 };
+      }
+      const eta = 9 + (h % 10);
+      const deliveryFee = (h % 2 === 0) ? 15 : 20;
+      return { eta: `${eta} mins`, deliveryFee, handlingFee: 5 };
+    }
+
+    function adjustProductForAddress(item) {
+      if (state.isCustomData) {
+        return { ...item };
+      }
+      const addr = state.platformAddresses[item.platform];
+      const h = hashPincode(addr.pincode, item.id);
+      // Slight realistic hyperlocal variation (-3% to +4% capped by MRP)
+      const deltaPct = ((h % 8) - 3) / 100;
+      let localPrice = Math.round(item.price * (1 + deltaPct));
+      if (localPrice > item.mrp) localPrice = item.mrp;
+      if (localPrice < 1) localPrice = item.price;
+      const localStock = item.inStock ? (h % 13 !== 0) : (h % 4 === 0);
+      return {
+        ...item,
+        price: localPrice,
+        inStock: localStock,
+        pincode: addr.pincode
+      };
+    }
+
+    function computeUnitRate(item) {
+      if (!item.unitValue || item.unitValue <= 0) return null;
+      const per100 = (item.price / item.unitValue) * 100;
+      const unitLabel = item.unitType === 'ml' ? '100 ml' : (item.unitType === 'g' ? '100 g' : 'unit');
+      return {
+        value: item.unitType === 'unit' ? (item.price / item.unitValue) : per100,
+        label: item.unitType === 'unit' ? `₹${(item.price / item.unitValue).toFixed(1)} / unit` : `₹${per100.toFixed(1)} / ${unitLabel}`
+      };
+    }
+
+    function computeDiscountPct(price, mrp) {
+      if (!mrp || mrp <= price) return 0;
+      return Math.round(((mrp - price) / mrp) * 100);
+    }
+
+    // --- Filtering & Sorting ---
+    function getMatchingProducts() {
+      const q = state.query.trim().toLowerCase();
+      const tokens = q ? q.split(/\s+/).filter(Boolean) : [];
+
+      return state.catalog
+        .map(adjustProductForAddress)
+        .filter((item) => {
+          if (tokens.length > 0) {
+            const haystack = `${item.title} ${item.brand || ''} ${item.category || ''} ${item.packLabel || ''}`.toLowerCase();
+            if (!tokens.every((t) => haystack.includes(t))) return false;
+          }
+          if (state.inStockOnly && !item.inStock) return false;
+          return true;
+        });
+    }
+
+    function sortItems(items) {
+      const list = [...items];
+      if (state.sortBy === 'price_asc') {
+        list.sort((a, b) => a.price - b.price);
+      } else if (state.sortBy === 'price_desc') {
+        list.sort((a, b) => b.price - a.price);
+      } else if (state.sortBy === 'unit_asc') {
+        list.sort((a, b) => {
+          const ua = computeUnitRate(a)?.value ?? Infinity;
+          const ub = computeUnitRate(b)?.value ?? Infinity;
+          return ua - ub;
+        });
+      } else if (state.sortBy === 'discount_desc') {
+        list.sort((a, b) => computeDiscountPct(b.price, b.mrp) - computeDiscountPct(a.price, a.mrp));
+      }
+      return list;
+    }
+
+    // --- Toast Helper ---
+    let toastTimer = null;
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toastText');
+      text.textContent = message;
+      toast.classList.remove('hidden');
+      toast.classList.add('flex');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add('hidden');
+        toast.classList.remove('flex');
+      }, 2400);
+    }
+
+    // --- Rendering Functions ---
+    function renderAddressCards() {
+      const container = document.getElementById('addressCardsGrid');
+      container.innerHTML = PLATFORM_ORDER.map((pid) => {
+        const p = PLATFORMS[pid];
+        const addr = state.platformAddresses[pid];
+        const meta = getPlatformLocationMeta(pid);
+        return `
+          <div class="bg-white rounded-xl border border-slate-200 p-3 flex items-center justify-between gap-3 shadow-2xs hover:border-slate-300 transition-colors">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold border ${p.badgeClass}">
+                  <span class="w-1.5 h-1.5 rounded-full ${p.dotClass}"></span>
+                  ${p.name}
+                </span>
+                <span class="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                  ${meta.eta}
+                </span>
+              </div>
+              <div class="text-sm font-semibold text-slate-900 truncate">
+                ${escapeHtml(addr.label)} · <span class="font-normal text-slate-600">${escapeHtml(addr.area)}</span>
+              </div>
+              <div class="text-[11px] text-slate-500 mt-0.5">
+                Pincode <span class="font-semibold text-slate-700">${escapeHtml(addr.pincode)}</span> · Delivery ₹${meta.deliveryFee}
+              </div>
+            </div>
+            <button
+              type="button"
+              data-change-address="${pid}"
+              class="shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-900 hover:text-white transition-colors"
+            >
+              Change
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderQuickChips() {
+      const container = document.getElementById('quickChips');
+      container.innerHTML = QUICK_SEARCHES.map((term) => {
+        const active = state.query.trim().toLowerCase() === term;
+        return `
+          <button
+            type="button"
+            data-quick-term="${term}"
+            class="px-2.5 py-1 rounded-full text-xs font-medium shrink-0 transition-colors ${
+              active
+                ? 'bg-slate-900 text-white'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }"
+          >
+            ${term}
+          </button>
+        `;
+      }).join('');
+
+      const q = state.query.trim() || 'dove';
+      const ext = document.getElementById('externalSearchLinks');
+      ext.innerHTML = `
+        <span class="text-slate-400 hidden xl:inline">Live pages:</span>
+        ${PLATFORM_ORDER.map((pid) => {
+          const p = PLATFORMS[pid];
+          return `
+            <a href="${p.searchUrl(q)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium transition-colors">
+              <span>${p.short}</span>
+              <i data-lucide="external-link" class="w-3 h-3"></i>
+            </a>
+          `;
+        }).join('')}
+      `;
+    }
+
+    function renderCategoryFilters(allMatches) {
+      const categories = ['All', ...Array.from(new Set(allMatches.map((i) => i.category).filter(Boolean)))];
+      if (!categories.includes(state.selectedCategory)) {
+        state.selectedCategory = 'All';
+      }
+      const row = document.getElementById('categoryFilterRow');
+      if (categories.length <= 2) {
+        row.classList.add('hidden');
+        row.innerHTML = '';
+        return;
+      }
+      row.classList.remove('hidden');
+      row.innerHTML = `<span class="text-xs font-medium text-slate-400 shrink-0 mr-1">Filter type:</span>` +
+        categories.map((cat) => {
+          const active = state.selectedCategory === cat;
+          const count = cat === 'All' ? allMatches.length : allMatches.filter((i) => i.category === cat).length;
+          return `
+            <button
+              type="button"
+              data-category="${escapeHtml(cat)}"
+              class="px-2.5 py-1 rounded-lg text-xs font-semibold shrink-0 border transition-colors ${
+                active
+                  ? 'bg-slate-900 text-white border-slate-900'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }"
+            >
+              ${escapeHtml(cat)} <span class="${active ? 'text-slate-300' : 'text-slate-400'}">(${count})</span>
+            </button>
+          `;
+        }).join('');
+    }
+
+    function renderSummaryStrip(filtered) {
+      const inStockItems = filtered.filter((i) => i.inStock);
+      const lowestPriceItem = inStockItems.length
+        ? inStockItems.reduce((min, cur) => (cur.price < min.price ? cur : min), inStockItems[0])
+        : null;
+
+      let bestUnitItem = null;
+      let bestUnitVal = Infinity;
+      for (const item of inStockItems) {
+        const u = computeUnitRate(item);
+        if (u && u.value < bestUnitVal) {
+          bestUnitVal = u.value;
+          bestUnitItem = item;
+        }
+      }
+
+      const maxDiscountItem = inStockItems.length
+        ? inStockItems.reduce((best, cur) => (computeDiscountPct(cur.price, cur.mrp) > computeDiscountPct(best.price, best.mrp) ? cur : best), inStockItems[0])
+        : null;
+
+      const strip = document.getElementById('summaryStrip');
+      const queryLabel = state.query.trim() ? `"${escapeHtml(state.query.trim())}"` : 'All Products';
+      strip.innerHTML = `
+        <div class="bg-white rounded-xl border border-slate-200 p-3.5">
+          <div class="text-xs font-medium text-slate-500">Total Results for ${queryLabel}</div>
+          <div class="mt-1 flex items-baseline gap-2">
+            <span class="text-2xl font-extrabold text-slate-900">${filtered.length}</span>
+            <span class="text-xs text-slate-500">${inStockItems.length} in stock</span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-3.5">
+          <div class="text-xs font-medium text-slate-500">Lowest Sticker Price</div>
+          <div class="mt-1 flex items-baseline gap-2">
+            <span class="text-2xl font-extrabold text-emerald-700">${lowestPriceItem ? `₹${lowestPriceItem.price}` : '—'}</span>
+            <span class="text-xs font-medium text-slate-600 truncate">${lowestPriceItem ? `${PLATFORMS[lowestPriceItem.platform].short} · ${escapeHtml(lowestPriceItem.packLabel)}` : 'No items'}</span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-3.5">
+          <div class="text-xs font-medium text-slate-500">Best Value (Unit Rate)</div>
+          <div class="mt-1 flex items-baseline gap-2">
+            <span class="text-xl sm:text-2xl font-extrabold text-slate-900">${bestUnitItem ? computeUnitRate(bestUnitItem).label : '—'}</span>
+          </div>
+          <div class="text-[11px] text-slate-500 truncate">${bestUnitItem ? `${PLATFORMS[bestUnitItem.platform].short} · ${escapeHtml(bestUnitItem.title)}` : ''}</div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-3.5">
+          <div class="text-xs font-medium text-slate-500">Biggest Discount</div>
+          <div class="mt-1 flex items-baseline gap-2">
+            <span class="text-2xl font-extrabold text-rose-600">${maxDiscountItem && computeDiscountPct(maxDiscountItem.price, maxDiscountItem.mrp) > 0 ? `${computeDiscountPct(maxDiscountItem.price, maxDiscountItem.mrp)}% OFF` : '—'}</span>
+            <span class="text-xs font-medium text-slate-600 truncate">${maxDiscountItem ? PLATFORMS[maxDiscountItem.platform].short : ''}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderProductCard(item, bestUnitByCategory) {
+      const disc = computeDiscountPct(item.price, item.mrp);
+      const unit = computeUnitRate(item);
+      const inBasketQty = state.basket[item.id]?.qty || 0;
+      const isBestUnit = item.inStock && unit && bestUnitByCategory[item.category] === item.id;
+
+      return `
+        <article class="bg-white rounded-xl border ${isBestUnit ? 'border-emerald-300 ring-1 ring-emerald-200/70' : 'border-slate-200'} p-3.5 flex flex-col justify-between gap-2.5 transition-all hover:shadow-sm ${!item.inStock ? 'opacity-65' : ''}">
+          <div>
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-600">${escapeHtml(item.category || 'Grocery')}</span>
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-700">${escapeHtml(item.packLabel)}</span>
+                ${isBestUnit ? `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">Best Unit Rate</span>` : ''}
+              </div>
+              ${disc > 0 ? `<span class="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200">${disc}% OFF</span>` : ''}
+            </div>
+
+            <h3 class="mt-2 text-sm font-semibold text-slate-900 leading-snug">${escapeHtml(item.title)}</h3>
+          </div>
+
+          <div class="pt-2 border-t border-slate-100 flex items-end justify-between gap-2">
+            <div>
+              <div class="flex items-baseline gap-1.5">
+                <span class="text-lg font-extrabold text-slate-900">₹${item.price}</span>
+                ${item.mrp > item.price ? `<span class="text-xs text-slate-400 line-through">₹${item.mrp}</span>` : ''}
+              </div>
+              <div class="text-[11px] text-slate-500 font-medium">${unit ? unit.label : ''}</div>
+            </div>
+
+            ${item.inStock ? (
+              inBasketQty > 0 ? `
+                <div class="inline-flex items-center rounded-lg border border-slate-900 bg-slate-900 text-white overflow-hidden">
+                  <button type="button" data-basket-dec="${item.id}" class="px-2.5 py-1 text-xs font-bold hover:bg-slate-700">−</button>
+                  <span class="px-2 py-1 text-xs font-bold">${inBasketQty}</span>
+                  <button type="button" data-basket-inc="${item.id}" class="px-2.5 py-1 text-xs font-bold hover:bg-slate-700">+</button>
+                </div>
+              ` : `
+                <button type="button" data-basket-add="${item.id}" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-900 bg-slate-100 hover:bg-slate-900 hover:text-white transition-colors">
+                  + Basket
+                </button>
+              `
+            ) : `
+              <span class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 text-slate-500">Out of stock</span>
+            `}
+          </div>
+        </article>
+      `;
+    }
+
+    function renderResults() {
+      const allMatches = getMatchingProducts();
+      renderCategoryFilters(allMatches);
+
+      const filtered = state.selectedCategory === 'All'
+        ? allMatches
+        : allMatches.filter((i) => i.category === state.selectedCategory);
+
+      renderSummaryStrip(filtered);
+
+      // Compute best unit rate item per category (in-stock only)
+      const bestUnitByCategory = {};
+      const bestUnitValByCat = {};
+      for (const item of filtered) {
+        if (!item.inStock) continue;
+        const u = computeUnitRate(item);
+        if (!u) continue;
+        const cat = item.category || 'Other';
+        if (bestUnitValByCat[cat] === undefined || u.value < bestUnitValByCat[cat]) {
+          bestUnitValByCat[cat] = u.value;
+          bestUnitByCategory[cat] = item.id;
+        }
+      }
+
+      const mobileTabs = document.getElementById('mobilePlatformTabs');
+      const container = document.getElementById('resultsContainer');
+
+      if (filtered.length === 0) {
+        mobileTabs.classList.add('hidden');
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl border border-slate-200 p-10 text-center space-y-2">
+            <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto">
+              <i data-lucide="search-x" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-900">No matching products in current catalog</h3>
+            <p class="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
+              Try searching for <button type="button" data-quick-term="dove" class="font-semibold text-slate-900 underline">dove</button>,
+              <button type="button" data-quick-term="milk" class="font-semibold text-slate-900 underline">milk</button>,
+              <button type="button" data-quick-term="atta" class="font-semibold text-slate-900 underline">atta</button>, or
+              <button type="button" data-quick-term="maggi" class="font-semibold text-slate-900 underline">maggi</button>, or import live JSON results from your local scraper.
+            </p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      if (state.viewMode === 'split') {
+        mobileTabs.classList.remove('hidden');
+        mobileTabs.innerHTML = PLATFORM_ORDER.map((pid) => {
+          const p = PLATFORMS[pid];
+          const count = filtered.filter((i) => i.platform === pid).length;
+          const active = state.mobileTab === pid;
+          return `
+            <button
+              type="button"
+              data-mobile-tab="${pid}"
+              class="flex-1 py-2 px-2 rounded-lg text-xs font-bold transition-colors ${
+                active ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+              }"
+            >
+              ${p.short} (${count})
+            </button>
+          `;
+        }).join('');
+
+        container.innerHTML = `
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+            ${PLATFORM_ORDER.map((pid) => {
+              const p = PLATFORMS[pid];
+              const addr = state.platformAddresses[pid];
+              const meta = getPlatformLocationMeta(pid);
+              const items = sortItems(filtered.filter((i) => i.platform === pid));
+              const inStockPrices = items.filter((i) => i.inStock).map((i) => i.price);
+              const minPrice = inStockPrices.length ? Math.min(...inStockPrices) : null;
+              const visibilityClass = state.mobileTab === pid ? 'block' : 'hidden lg:block';
+
+              return `
+                <div class="${visibilityClass} bg-slate-100/70 rounded-2xl border border-slate-200 overflow-hidden">
+                  <div class="px-4 py-3 border-b ${p.headerBg} flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full ${p.dotClass}"></span>
+                        <h2 class="text-sm font-extrabold text-slate-900">${p.name}</h2>
+                        <span class="px-1.5 py-0.5 rounded-full text-[11px] font-bold bg-white/80 text-slate-700">${items.length}</span>
+                      </div>
+                      <div class="text-[11px] text-slate-600 truncate mt-0.5">
+                        ${escapeHtml(addr.label)} (${escapeHtml(addr.pincode)}) · ${meta.eta}
+                      </div>
+                    </div>
+                    <div class="text-right shrink-0">
+                      <div class="text-[10px] uppercase tracking-wider font-semibold text-slate-500">From</div>
+                      <div class="text-sm font-extrabold text-slate-900">${minPrice !== null ? `₹${minPrice}` : '—'}</div>
+                    </div>
+                  </div>
+                  <div class="p-3 space-y-2.5">
+                    ${items.length
+                      ? items.map((item) => renderProductCard(item, bestUnitByCategory)).join('')
+                      : `<div class="bg-white rounded-xl border border-dashed border-slate-300 p-6 text-center text-xs text-slate-500">No results on ${p.name} for this filter</div>`
+                    }
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      } else {
+        mobileTabs.classList.add('hidden');
+        const sortedAll = sortItems(filtered);
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500">
+                    <th class="py-3 px-4 font-semibold">Platform &amp; Pincode</th>
+                    <th class="py-3 px-4 font-semibold">Product</th>
+                    <th class="py-3 px-4 font-semibold">Pack</th>
+                    <th class="py-3 px-4 font-semibold">Price</th>
+                    <th class="py-3 px-4 font-semibold">Unit Rate</th>
+                    <th class="py-3 px-4 font-semibold text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-sm">
+                  ${sortedAll.map((item) => {
+                    const p = PLATFORMS[item.platform];
+                    const addr = state.platformAddresses[item.platform];
+                    const disc = computeDiscountPct(item.price, item.mrp);
+                    const unit = computeUnitRate(item);
+                    const qty = state.basket[item.id]?.qty || 0;
+                    const isBest = item.inStock && unit && bestUnitByCategory[item.category] === item.id;
+                    return `
+                      <tr class="hover:bg-slate-50/80 ${!item.inStock ? 'opacity-60' : ''}">
+                        <td class="py-3 px-4 whitespace-nowrap">
+                          <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold border ${p.badgeClass}">
+                            <span class="w-1.5 h-1.5 rounded-full ${p.dotClass}"></span>
+                            ${p.short}
+                          </span>
+                          <div class="text-[11px] text-slate-500 mt-0.5">${escapeHtml(addr.pincode)}</div>
+                        </td>
+                        <td class="py-3 px-4">
+                          <div class="font-semibold text-slate-900">${escapeHtml(item.title)}</div>
+                          <div class="flex items-center gap-1.5 mt-0.5">
+                            <span class="text-[11px] text-slate-500">${escapeHtml(item.category)}</span>
+                            ${isBest ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Best Unit Rate</span>` : ''}
+                          </div>
+                        </td>
+                        <td class="py-3 px-4 whitespace-nowrap text-xs font-medium text-slate-600">${escapeHtml(item.packLabel)}</td>
+                        <td class="py-3 px-4 whitespace-nowrap">
+                          <div class="flex items-baseline gap-1.5">
+                            <span class="font-extrabold text-slate-900">₹${item.price}</span>
+                            ${item.mrp > item.price ? `<span class="text-xs text-slate-400 line-through">₹${item.mrp}</span>` : ''}
+                          </div>
+                          ${disc > 0 ? `<div class="text-[11px] font-semibold text-rose-600">${disc}% OFF</div>` : ''}
+                        </td>
+                        <td class="py-3 px-4 whitespace-nowrap text-xs font-medium text-slate-700">${unit ? unit.label : '—'}</td>
+                        <td class="py-3 px-4 whitespace-nowrap text-right">
+                          ${item.inStock ? (
+                            qty > 0 ? `
+                              <div class="inline-flex items-center rounded-lg border border-slate-900 bg-slate-900 text-white overflow-hidden">
+                                <button type="button" data-basket-dec="${item.id}" class="px-2 py-1 text-xs font-bold hover:bg-slate-700">−</button>
+                                <span class="px-2 py-1 text-xs font-bold">${qty}</span>
+                                <button type="button" data-basket-inc="${item.id}" class="px-2 py-1 text-xs font-bold hover:bg-slate-700">+</button>
+                              </div>
+                            ` : `
+                              <button type="button" data-basket-add="${item.id}" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-900 bg-slate-100 hover:bg-slate-900 hover:text-white transition-colors">
+                                + Basket
+                              </button>
+                            `
+                          ) : `<span class="text-xs text-slate-400 font-medium">Out of stock</span>`}
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+
+      lucide.createIcons();
+    }
+
+    function renderBasket() {
+      const entries = Object.values(state.basket);
+      const totalQty = entries.reduce((sum, e) => sum + e.qty, 0);
+      document.getElementById('basketCount').textContent = totalQty;
+
+      const content = document.getElementById('basketContent');
+      if (entries.length === 0) {
+        content.innerHTML = `
+          <div class="py-16 text-center space-y-2">
+            <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+              <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+            </div>
+            <div class="text-sm font-semibold text-slate-700">Your comparison basket is empty</div>
+            <p class="text-xs text-slate-500">Tap "+ Basket" on products from any platform to compare landed totals with delivery fees.</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      const sections = PLATFORM_ORDER.map((pid) => {
+        const items = entries.filter((e) => e.item.platform === pid);
+        if (!items.length) return '';
+        const p = PLATFORMS[pid];
+        const addr = state.platformAddresses[pid];
+        const meta = getPlatformLocationMeta(pid);
+        const subtotal = items.reduce((s, e) => s + e.item.price * e.qty, 0);
+        const grand = subtotal + meta.deliveryFee + meta.handlingFee;
+
+        return `
+          <div class="rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-3.5 py-2.5 ${p.headerBg} border-b flex items-center justify-between">
+              <div>
+                <div class="text-xs font-extrabold text-slate-900">${p.name}</div>
+                <div class="text-[11px] text-slate-600">${escapeHtml(addr.label)} · ${escapeHtml(addr.pincode)}</div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-extrabold text-slate-900">₹${grand}</div>
+                <div class="text-[10px] text-slate-500">incl. ₹${meta.deliveryFee + meta.handlingFee} fees</div>
+              </div>
+            </div>
+            <div class="divide-y divide-slate-100 bg-white">
+              ${items.map(({ item, qty }) => `
+                <div class="px-3.5 py-2.5 flex items-center justify-between gap-2">
+                  <div class="min-w-0">
+                    <div class="text-xs font-semibold text-slate-900 truncate">${escapeHtml(item.title)}</div>
+                    <div class="text-[11px] text-slate-500">${escapeHtml(item.packLabel)} · ₹${item.price} each</div>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <div class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50">
+                      <button type="button" data-basket-dec="${item.id}" class="px-2 py-0.5 text-xs font-bold text-slate-700 hover:bg-slate-200">−</button>
+                      <span class="px-2 py-0.5 text-xs font-bold text-slate-900">${qty}</span>
+                      <button type="button" data-basket-inc="${item.id}" class="px-2 py-0.5 text-xs font-bold text-slate-700 hover:bg-slate-200">+</button>
+                    </div>
+                    <span class="text-xs font-bold text-slate-900 w-12 text-right">₹${item.price * qty}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      content.innerHTML = sections;
+      lucide.createIcons();
+    }
+
+    // --- Address Modal ---
+    function openAddressModal(platformId) {
+      state.editingAddressPlatform = platformId;
+      const p = PLATFORMS[platformId];
+      const current = state.platformAddresses[platformId];
+
+      document.getElementById('addressModalTitle').textContent = `${p.name} — Delivery Address`;
+      document.getElementById('addressModalSubtitle').textContent = `Currently delivering to ${current.label} (${current.pincode})`;
+
+      const list = document.getElementById('savedAddressList');
+      list.innerHTML = state.savedAddresses.map((addr) => {
+        const isSelected = addr.pincode === current.pincode && addr.label === current.label;
+        return `
+          <button
+            type="button"
+            data-select-saved-addr="${addr.id}"
+            class="w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between gap-2 ${
+              isSelected
+                ? 'border-slate-900 bg-slate-50 ring-1 ring-slate-900'
+                : 'border-slate-200 hover:border-slate-400 bg-white'
+            }"
+          >
+            <div>
+              <div class="text-sm font-semibold text-slate-900">${escapeHtml(addr.label)} <span class="text-xs font-bold text-slate-500">· ${escapeHtml(addr.pincode)}</span></div>
+              <div class="text-xs text-slate-500">${escapeHtml(addr.area)}</div>
+            </div>
+            ${isSelected ? `<span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">Active</span>` : `<span class="text-xs font-semibold text-slate-400">Select</span>`}
+          </button>
+        `;
+      }).join('');
+
+      document.getElementById('addrLabelInput').value = '';
+      document.getElementById('addrPincodeInput').value = '';
+      document.getElementById('addrAreaInput').value = '';
+
+      const modal = document.getElementById('addressModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      lucide.createIcons();
+    }
+
+    function closeAddressModal() {
+      const modal = document.getElementById('addressModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      state.editingAddressPlatform = null;
+    }
+
+    function applyAddressToPlatform(platformId, addrObj, applyAll = false) {
+      if (applyAll) {
+        for (const pid of PLATFORM_ORDER) {
+          state.platformAddresses[pid] = { ...addrObj };
+        }
+        showToast(`Address updated for all 3 platforms (${addrObj.pincode})`);
+      } else {
+        state.platformAddresses[platformId] = { ...addrObj };
+        showToast(`${PLATFORMS[platformId].name} address set to ${addrObj.label} (${addrObj.pincode})`);
+      }
+      persistAddresses();
+      closeAddressModal();
+      renderAll();
+    }
+
+    // --- Import Modal Helpers ---
+    function openImportModal() {
+      document.getElementById('importErrorMsg').classList.add('hidden');
+      const modal = document.getElementById('importModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeImportModal() {
+      const modal = document.getElementById('importModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function loadImportedJson(rawText) {
+      const errEl = document.getElementById('importErrorMsg');
+      try {
+        const parsed = JSON.parse(rawText);
+        const list = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.results) ? parsed.results : null);
+        if (!list || list.length === 0) {
+          throw new Error('JSON must be a non-empty array of product objects (or { results: [...] }).');
+        }
+        const normalized = list.map((item, idx) => {
+          const plat = String(item.platform || '').toLowerCase();
+          const platformKey = plat.includes('jio') ? 'jiomart' : (plat.includes('blink') ? 'blinkit' : 'flipkart');
+          const price = Number(item.price) || 0;
+          const mrp = Number(item.mrp) || price;
+          return {
+            id: item.id || `imp-${idx}`,
+            platform: platformKey,
+            title: String(item.title || 'Unnamed Product'),
+            brand: String(item.brand || ''),
+            category: String(item.category || 'Imported'),
+            packLabel: String(item.packLabel || item.pack || '1 unit'),
+            unitValue: Number(item.unitValue) || 1,
+            unitType: item.unitType || 'unit',
+            price,
+            mrp,
+            inStock: item.inStock !== false
+          };
+        });
+        state.catalog = normalized;
+        state.isCustomData = true;
+        state.selectedCategory = 'All';
+        if (parsed.query) {
+          state.query = String(parsed.query);
+          document.getElementById('searchInput').value = state.query;
+        }
+        updateDataSourceBadge();
+        closeImportModal();
+        renderAll();
+        showToast(`Loaded ${normalized.length} live results`);
+      } catch (err) {
+        errEl.textContent = err.message || 'Invalid JSON format.';
+        errEl.classList.remove('hidden');
+      }
+    }
+
+    function updateDataSourceBadge() {
+      const badge = document.getElementById('dataSourceBadge');
+      if (state.isCustomData) {
+        badge.className = 'hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Imported Live JSON`;
+      } else {
+        badge.className = 'hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200';
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Sample Catalog`;
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function renderAll() {
+      renderAddressCards();
+      renderQuickChips();
+      renderResults();
+      renderBasket();
+    }
+
+    // --- Event Listeners ---
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      state.query = e.target.value;
+      state.selectedCategory = 'All';
+      renderQuickChips();
+      renderResults();
+    });
+
+    document.getElementById('clearSearchBtn').addEventListener('click', () => {
+      state.query = '';
+      state.selectedCategory = 'All';
+      const input = document.getElementById('searchInput');
+      input.value = '';
+      input.focus();
+      renderQuickChips();
+      renderResults();
+    });
+
+    document.getElementById('viewSplitBtn').addEventListener('click', () => {
+      state.viewMode = 'split';
+      document.getElementById('viewSplitBtn').className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 bg-white text-slate-900 shadow-sm';
+      document.getElementById('viewUnifiedBtn').className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
+      renderResults();
+    });
+
+    document.getElementById('viewUnifiedBtn').addEventListener('click', () => {
+      state.viewMode = 'unified';
+      document.getElementById('viewUnifiedBtn').className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 bg-white text-slate-900 shadow-sm';
+      document.getElementById('viewSplitBtn').className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
+      renderResults();
+    });
+
+    document.getElementById('sortSelect').addEventListener('change', (e) => {
+      state.sortBy = e.target.value;
+      renderResults();
+    });
+
+    document.getElementById('inStockToggle').addEventListener('change', (e) => {
+      state.inStockOnly = e.target.checked;
+      renderResults();
+    });
+
+    // Delegated Clicks for Dynamic Elements
+    document.addEventListener('click', (e) => {
+      const changeAddrBtn = e.target.closest('[data-change-address]');
+      if (changeAddrBtn) {
+        openAddressModal(changeAddrBtn.dataset.changeAddress);
+        return;
+      }
+
+      const savedAddrBtn = e.target.closest('[data-select-saved-addr]');
+      if (savedAddrBtn && state.editingAddressPlatform) {
+        const found = state.savedAddresses.find((a) => a.id === savedAddrBtn.dataset.selectSavedAddr);
+        if (found) applyAddressToPlatform(state.editingAddressPlatform, found, false);
+        return;
+      }
+
+      const quickChip = e.target.closest('[data-quick-term]');
+      if (quickChip) {
+        state.query = quickChip.dataset.quickTerm;
+        state.selectedCategory = 'All';
+        document.getElementById('searchInput').value = state.query;
+        renderQuickChips();
+        renderResults();
+        return;
+      }
+
+      const catBtn = e.target.closest('[data-category]');
+      if (catBtn) {
+        state.selectedCategory = catBtn.dataset.category;
+        renderResults();
+        return;
+      }
+
+      const mobTab = e.target.closest('[data-mobile-tab]');
+      if (mobTab) {
+        state.mobileTab = mobTab.dataset.mobileTab;
+        renderResults();
+        return;
+      }
+
+      const addBtn = e.target.closest('[data-basket-add]');
+      if (addBtn) {
+        const id = addBtn.dataset.basketAdd;
+        const found = getMatchingProducts().find((i) => i.id === id) || state.catalog.find((i) => i.id === id);
+        if (found) {
+          state.basket[id] = { item: found, qty: 1 };
+          renderResults();
+          renderBasket();
+          showToast(`Added to ${PLATFORMS[found.platform].short} basket`);
+        }
+        return;
+      }
+
+      const incBtn = e.target.closest('[data-basket-inc]');
+      if (incBtn) {
+        const id = incBtn.dataset.basketInc;
+        if (state.basket[id]) {
+          state.basket[id].qty += 1;
+          renderResults();
+          renderBasket();
+        }
+        return;
+      }
+
+      const decBtn = e.target.closest('[data-basket-dec]');
+      if (decBtn) {
+        const id = decBtn.dataset.basketDec;
+        if (state.basket[id]) {
+          state.basket[id].qty -= 1;
+          if (state.basket[id].qty <= 0) delete state.basket[id];
+          renderResults();
+          renderBasket();
+        }
+        return;
+      }
+    });
+
+    // Custom Address Form
+    document.getElementById('customAddressForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!state.editingAddressPlatform) return;
+      const label = document.getElementById('addrLabelInput').value.trim();
+      const pincode = document.getElementById('addrPincodeInput').value.trim();
+      const area = document.getElementById('addrAreaInput').value.trim();
+      if (!label || !/^[0-9]{6}$/.test(pincode) || !area) return;
+
+      const newAddr = { id: `addr-${Date.now()}`, label, area, pincode };
+      state.savedAddresses.unshift(newAddr);
+      applyAddressToPlatform(state.editingAddressPlatform, newAddr, false);
+    });
+
+    document.getElementById('applyAllPlatformsBtn').addEventListener('click', () => {
+      if (!state.editingAddressPlatform) return;
+      const label = document.getElementById('addrLabelInput').value.trim();
+      const pincode = document.getElementById('addrPincodeInput').value.trim();
+      const area = document.getElementById('addrAreaInput').value.trim();
+      if (label && /^[0-9]{6}$/.test(pincode) && area) {
+        const newAddr = { id: `addr-${Date.now()}`, label, area, pincode };
+        state.savedAddresses.unshift(newAddr);
+        applyAddressToPlatform(state.editingAddressPlatform, newAddr, true);
+      } else {
+        const current = state.platformAddresses[state.editingAddressPlatform];
+        applyAddressToPlatform(state.editingAddressPlatform, current, true);
+      }
+    });
+
+    document.getElementById('closeAddressModalBtn').addEventListener('click', closeAddressModal);
+
+    // Import Modal Listeners
+    document.getElementById('openImportBtn').addEventListener('click', openImportModal);
+    document.getElementById('closeImportModalBtn').addEventListener('click', closeImportModal);
+    document.getElementById('cancelImportBtn').addEventListener('click', closeImportModal);
+
+    document.getElementById('applyJsonBtn').addEventListener('click', () => {
+      const raw = document.getElementById('jsonPasteArea').value.trim();
+      if (!raw) {
+        const err = document.getElementById('importErrorMsg');
+        err.textContent = 'Please paste JSON or upload a file first.';
+        err.classList.remove('hidden');
+        return;
+      }
+      loadImportedJson(raw);
+    });
+
+    document.getElementById('jsonFileInput').addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        document.getElementById('jsonPasteArea').value = reader.result;
+        loadImportedJson(reader.result);
+      };
+      reader.readAsText(file);
+    });
+
+    document.getElementById('downloadTemplateBtn').addEventListener('click', () => {
+      const sample = {
+        query: 'dove',
+        fetchedAt: new Date().toISOString(),
+        results: SAMPLE_CATALOG.filter((i) => i.brand === 'Dove')
+      };
+      const blob = new Blob([JSON.stringify(sample, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'quickcompare-template.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('resetDemoBtn').addEventListener('click', () => {
+      state.catalog = [...SAMPLE_CATALOG];
+      state.isCustomData = false;
+      state.query = 'dove';
+      state.selectedCategory = 'All';
+      document.getElementById('searchInput').value = 'dove';
+      updateDataSourceBadge();
+      closeImportModal();
+      renderAll();
+      showToast('Restored built-in sample catalog');
+    });
+
+    // Basket Drawer Listeners
+    function openBasket() {
+      const d = document.getElementById('basketDrawer');
+      d.classList.remove('hidden');
+      d.classList.add('flex');
+      renderBasket();
+    }
+    function closeBasket() {
+      const d = document.getElementById('basketDrawer');
+      d.classList.add('hidden');
+      d.classList.remove('flex');
+    }
+
+    document.getElementById('openBasketBtn').addEventListener('click', openBasket);
+    document.getElementById('closeBasketBtn').addEventListener('click', closeBasket);
+    document.getElementById('closeBasketFooterBtn').addEventListener('click', closeBasket);
+    document.getElementById('clearBasketBtn').addEventListener('click', () => {
+      state.basket = {};
+      renderResults();
+      renderBasket();
+      showToast('Basket cleared');
+    });
+
+    // Close modals on backdrop click
+    document.getElementById('addressModal').addEventListener('click', (e) => {
+      if (e.target.id === 'addressModal') closeAddressModal();
+    });
+    document.getElementById('importModal').addEventListener('click', (e) => {
+      if (e.target.id === 'importModal') closeImportModal();
+    });
+    document.getElementById('basketDrawer').addEventListener('click', (e) => {
+      if (e.target.id === 'basketDrawer') closeBasket();
+    });
+
+    // --- Live Backend Search (same-origin /api/search when hosted on Render/Node) ---
+    async function runLiveSearch() {
+      const q = document.getElementById('searchInput').value.trim();
+      if (!q) {
+        showToast('Enter a product name to search live');
+        return;
+      }
+      const btn = document.getElementById('liveSearchBtn');
+      const banner = document.getElementById('liveStatusBanner');
+      btn.disabled = true;
+      btn.textContent = 'Fetching...';
+      banner.className = 'rounded-xl border border-sky-200 bg-sky-50 text-sky-900 px-4 py-3 text-xs sm:text-sm font-medium flex items-center justify-between gap-3';
+      banner.textContent = `Fetching live rates for "${q}" from JioMart (${state.platformAddresses.jiomart.pincode}), Blinkit (${state.platformAddresses.blinkit.pincode}) & Flipkart Minutes (${state.platformAddresses.flipkart.pincode})...`;
+
+      try {
+        const resp = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: q,
+            addresses: state.platformAddresses
+          })
+        });
+        if (!resp.ok) throw new Error(`Server returned HTTP ${resp.status}`);
+        const data = await resp.json();
+        const items = Array.isArray(data.results) ? data.results : [];
+
+        if (items.length > 0) {
+          state.catalog = items;
+          state.isCustomData = true;
+          state.query = q;
+          state.selectedCategory = 'All';
+          updateDataSourceBadge();
+          const badge = document.getElementById('dataSourceBadge');
+          badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Live Rates`;
+          renderAll();
+
+          const errs = Object.entries(data.errors || {}).filter(([, v]) => v).map(([k]) => k);
+          if (errs.length) {
+            banner.className = 'rounded-xl border border-amber-200 bg-amber-50 text-amber-900 px-4 py-3 text-xs sm:text-sm font-medium flex items-center justify-between gap-3';
+            banner.textContent = `Loaded ${items.length} live results. Could not fetch automatically from: ${errs.join(', ')} (use Live pages links above to check directly).`;
+          } else {
+            banner.className = 'rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 px-4 py-3 text-xs sm:text-sm font-medium flex items-center justify-between gap-3';
+            banner.textContent = `Loaded ${items.length} live results across JioMart (${data.counts?.jiomart ?? 0}), Blinkit (${data.counts?.blinkit ?? 0}) & Flipkart Minutes (${data.counts?.flipkart ?? 0}).`;
+          }
+        } else {
+          banner.className = 'rounded-xl border border-amber-200 bg-amber-50 text-amber-900 px-4 py-3 text-xs sm:text-sm font-medium flex items-center justify-between gap-3';
+          banner.textContent = `Live fetch returned 0 items (sites may be rate-limiting cloud IPs). Use the Live pages buttons above to open "${q}" directly on each app.`;
+        }
+      } catch (err) {
+        banner.className = 'rounded-xl border border-rose-200 bg-rose-50 text-rose-900 px-4 py-3 text-xs sm:text-sm font-medium flex items-center justify-between gap-3';
+        banner.textContent = `Live fetch failed (${err.message}). Make sure the app is opened via your Render/Node URL.`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Search Live';
+      }
+    }
+
+    document.getElementById('liveSearchBtn').addEventListener('click', runLiveSearch);
+    document.getElementById('searchInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        runLiveSearch();
+      }
+    });
+
+    // --- Boot ---
+    loadSavedState();
+    renderAll();
+  </script>
+</body>
+</html>
